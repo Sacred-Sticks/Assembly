@@ -1,0 +1,7 @@
+C:\Users\Ackma\OneDrive\Documents\GitHub\Assembly\Assembly Program\Assembly\bin\Debug\Assembly_Program.exe
+C:\Users\Ackma\OneDrive\Documents\GitHub\Assembly\Assembly Program\Assembly\bin\Debug\Assembly_Program.pdb
+C:\Users\Ackma\OneDrive\Documents\GitHub\Assembly\Assembly Program\Assembly\obj\Debug\Assembly.csproj.AssemblyReference.cache
+C:\Users\Ackma\OneDrive\Documents\GitHub\Assembly\Assembly Program\Assembly\obj\Debug\Assembly.csproj.SuggestedBindingRedirects.cache
+C:\Users\Ackma\OneDrive\Documents\GitHub\Assembly\Assembly Program\Assembly\obj\Debug\Assembly.csproj.CoreCompileInputs.cache
+C:\Users\Ackma\OneDrive\Documents\GitHub\Assembly\Assembly Program\Assembly\obj\Debug\Assembly_Program.exe
+C:\Users\Ackma\OneDrive\Documents\GitHub\Assembly\Assembly Program\Assembly\obj\Debug\Assembly_Program.pdb
