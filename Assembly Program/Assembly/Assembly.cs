@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Assembly
 {
@@ -14,17 +15,23 @@ namespace Assembly
             assistance,
         }
 
+        public static Register activeRegister;
+        public static Register storageRegister;
+        public static List<ValueSet> activeProgram;
+        public static int operationIndex;
+        
         public static void Main()
         {
             bool running = true;
-            var activeRegister = new Register(8);
-            var storageRegister = new Register(64);
+            activeRegister = new Register(8);
+            storageRegister = new Register(64);
+            activeProgram = new List<ValueSet>();
             
             IntroduceProgram();
             while (running)
             {
+                Console.WriteLine();
                 ListenForInput(ref running);
-
             }
         }
 
@@ -74,14 +81,67 @@ namespace Assembly
 
         private static void RunProgram()
         {
-            Console.WriteLine("Running Program");
+            bool continueRunning = true;
+            operationIndex = 0;
+            while (continueRunning)
+            {
+                var values = activeProgram[operationIndex];
+                operationIndex++;
+                values.Operation.TriggerOperation(values.StorageIndex, values.ActiveIndices, values.SetValue, out continueRunning);
+                if (continueRunning)
+                    continue;
+                Register.ConvertToInteger(storageRegister.Data[0], out int value);
+                Console.WriteLine($"Final Value at {value}");
+                return;
+            }
         }
 
         private static void AddOperation()
         {
             var operation = new Operation();
             operation.SetUpOperation();
-            Console.WriteLine(operation.Function.ToString());
+            int storageIndex = 0;
+            int[] activeIndices = new int[2];
+            int setValue = 0;
+            switch (operation.Function)
+            {
+                case Operation.OperationType.add:
+                case Operation.OperationType.sub:
+                    Console.Write("Input Storage Index: ");
+                    int.TryParse(Console.ReadLine(), out storageIndex);
+                    Console.Write("Input Source Index A: ");
+                    int.TryParse(Console.ReadLine(), out activeIndices[0]);
+                    Console.Write("Input Source Index B: ");
+                    int.TryParse(Console.ReadLine(), out activeIndices[1]);
+                    break;
+                case Operation.OperationType.inc:
+                case Operation.OperationType.dec:
+                case Operation.OperationType.str:
+                case Operation.OperationType.load:
+                    Console.Write("Input Storage Index: ");
+                    int.TryParse(Console.ReadLine(), out storageIndex);
+                    Console.Write("Input Source Index: ");
+                    int.TryParse(Console.ReadLine(), out activeIndices[0]);
+                    break;
+                case Operation.OperationType.set:
+                case Operation.OperationType.jiz:
+                    Console.Write("Input Storage Index: ");
+                    int.TryParse(Console.ReadLine(), out storageIndex);
+                    Console.Write("Input Key Value: ");
+                    int.TryParse(Console.ReadLine(), out setValue);
+                    break;
+                case Operation.OperationType.jmp:
+                    Console.Write("Input Key Value: ");
+                    int.TryParse(Console.ReadLine(), out setValue);
+                    break;
+                case Operation.OperationType.None:
+                case Operation.OperationType.halt:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+            var values = new ValueSet(operation, storageIndex, activeIndices, setValue);
+            activeProgram.Add(values);
         }
 
         private static void RemoveOperation()
@@ -91,7 +151,10 @@ namespace Assembly
 
         private static void ShowOperations()
         {
-            Console.WriteLine("Print List Here:");
+            foreach (var values in activeProgram)
+            {
+                Console.WriteLine(values.Operation.Function.ToString());
+            }
         }
 
         private static void ShowAssistance()

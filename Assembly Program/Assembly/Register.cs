@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Assembly
 {
@@ -30,16 +31,32 @@ namespace Assembly
             Data[index] = binaryValue;
         }
 
-        private static void ConvertToBinary(int value, out bool[] binaryValue)
+        public static void ConvertToBinary(int value, out bool[] binaryValue)
         {
             binaryValue = new bool[BITS];
             string binaryString = Convert.ToString(value, 2);
 
             for (int i = 0; i < binaryString.Length; i++)
             {
+                int index = BITS - i - 1;
                 if (binaryString[i] == '1')
-                    binaryValue[i] = true;
+                    binaryValue[index] = true;
             }
+        }
+
+        public static void ConvertToInteger(bool[] binaryValue, out int value)
+        {
+            string binaryString = "";
+            for(int i = BITS - 1; i >= 0; i--)
+            {
+                if (binaryValue[i])
+                {
+                    binaryString += 1.ToString();
+                    continue;
+                }
+                binaryString += 0.ToString();
+            }
+            value = Convert.ToInt32(binaryString, 2);
         }
     }
 }
