@@ -35,19 +35,27 @@ namespace Assembly
         {
             binaryValue = new bool[BITS];
             string binaryString = Convert.ToString(value, 2);
-
-            for (int i = 0; i < binaryString.Length; i++)
+            
+            string binary = "";
+            int count = binaryString.Length;
+            while (count < BITS)
             {
-                int index = BITS - i - 1;
-                if (binaryString[i] == '1')
-                    binaryValue[index] = true;
+                binary += '0';
+                count++;
+            }
+            binary += binaryString;
+
+            for (int i = 0; i < BITS; i++)
+            {;
+                if (binary[i] == '1')
+                    binaryValue[i] = true;
             }
         }
 
         public static void ConvertToInteger(bool[] binaryValue, out int value)
         {
             string binaryString = "";
-            for(int i = BITS - 1; i >= 0; i--)
+            for(int i = 0; i < BITS; i++)
             {
                 if (binaryValue[i])
                 {
