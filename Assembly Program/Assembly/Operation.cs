@@ -14,9 +14,10 @@ namespace Assembly
             set, // A = LoadImmediate(value) A = value
             inc, // A = Increase(B) A = B + 1
             dec, // A = Decrease(B) A = B - 1
-            jmp, // Jump(A) Load operation at Index A
+            inv,
+            jump, // Jump(A) Load operation at Index A
             jiz, // JumpIfZero(A, B) Load operation at Index A if B is 0
-            str, // Store(A, B) Store Data from Index A in Active Register at Index B of Storage Register
+            save, // Store(A, B) Store Data from Index A in Active Register at Index B of Storage Register
             load, // Load(A, B) Load Data from Index A of Storage Register into Index B of Active Register
             halt, // Ends the program
             stop, // Stop adding new operations
@@ -24,21 +25,24 @@ namespace Assembly
 
         public OperationType Function { get; private set; }
 
-        public void SetUpOperation(out bool newOperation)
-        {
-            newOperation = AssignFunction();
-        }
-
         public void TriggerOperation(int storageIndex, int[] activeIndices, int setValue, out bool continueRunning)
         {
             continueRunning = true;
+            if (storageIndex < 0 || storageIndex > Assembly.storageRegisterSize)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(storageIndex), 
+                    storageIndex, 
+                    $"{nameof(storageIndex)} must be between 0 and {Assembly.storageRegisterSize}"
+                    );
+            }
             switch (Function)
             {
                 case OperationType.add:
-                    Add(storageIndex, activeIndices[0], activeIndices[1]);
+                    Add(activeIndices[0], activeIndices[1], activeIndices[2]);
                     break;
                 case OperationType.sub:
-                    Subtract(storageIndex, activeIndices[0], activeIndices[1]);
+                    Subtract(activeIndices[0], activeIndices[1], activeIndices[2]);
                     break;
                 case OperationType.inc:
                     Increase(activeIndices[0]);
@@ -46,19 +50,22 @@ namespace Assembly
                 case OperationType.dec:
                     Decrease(activeIndices[0]);
                     break;
-                case OperationType.str:
+                case OperationType.inv:
+                    Invert(activeIndices[0]);
+                    break;
+                case OperationType.save:
                     Store(storageIndex, activeIndices[0]);
                     break;
                 case OperationType.load:
                     Load(storageIndex, activeIndices[0]);
                     break;
                 case OperationType.set:
-                    Set(storageIndex, setValue);
+                    Set(activeIndices[0], setValue);
                     break;
                 case OperationType.jiz:
-                    JumpIfZero(storageIndex, setValue);
+                    JumpIfZero(activeIndices[0], setValue);
                     break;
-                case OperationType.jmp:
+                case OperationType.jump:
                     Jump(setValue);
                     break;
                 case OperationType.none:
@@ -71,7 +78,7 @@ namespace Assembly
             }
         }
 
-        private bool AssignFunction()
+        public void AssignFunction(out bool newOperation)
         {
             Console.WriteLine();
             Console.WriteLine("Enter The Operation Being Added:");
@@ -80,7 +87,7 @@ namespace Assembly
             if (string.IsNullOrEmpty(userInput))
             {
                 Console.WriteLine("ERROR: Missing Operation Input");
-                return false;
+                newOperation = false;
             }
 
             switch (userInput)
@@ -100,14 +107,17 @@ namespace Assembly
                 case nameof(OperationType.dec):
                     Function = OperationType.dec;
                     break;
-                case nameof(OperationType.jmp):
-                    Function = OperationType.jmp;
+                case nameof(OperationType.inv):
+                    Function = OperationType.inv;
+                    break;
+                case nameof(OperationType.jump):
+                    Function = OperationType.jump;
                     break;
                 case nameof(OperationType.jiz):
                     Function = OperationType.jiz;
                     break;
-                case nameof(OperationType.str):
-                    Function = OperationType.str;
+                case nameof(OperationType.save):
+                    Function = OperationType.save;
                     break;
                 case nameof(OperationType.load):
                     Function = OperationType.load;
@@ -117,12 +127,13 @@ namespace Assembly
                     break;
                 case nameof(OperationType.stop):
                     Function = OperationType.halt;
-                    return false;
+                    newOperation = false;
+                    return;
                 default:
                     Console.WriteLine("Operation Not Found");
                     break;
             }
-            return true;
+            newOperation = true;
         }
 
         private static void Add(int writingIndex, int readingIndexA, int readingIndexB)
@@ -166,6 +177,13 @@ namespace Assembly
             Assembly.activeRegister.Data[writingIndex] = binaryValue;
         }
 
+        private static void Invert(int writingIndex)
+        {
+            bool[] binaryValue = Assembly.activeRegister.Data[writingIndex];
+            binaryValue = LogicGates.Invert(binaryValue);
+            Assembly.activeRegister.Data[writingIndex] = binaryValue;
+        }
+        
         private static void Jump(int jumpIndex)
         {
             Assembly.operationIndex = jumpIndex;
