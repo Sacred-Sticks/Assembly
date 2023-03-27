@@ -7,6 +7,12 @@ namespace Assembly
     {
         public Register(int size)
         {
+            minValue = -1;
+            for (int i = 1; i < BITS; i++)
+            {
+                minValue *= 2;
+            }
+            maxValue = -minValue - 1;
             Data = new bool[size][];
             for (int i = 0; i < size; i++)
                 Data[i] = new bool[BITS];
@@ -15,9 +21,16 @@ namespace Assembly
         public bool[][] Data { get; }
 
         public const int BITS = 8;
-
+        public static int maxValue { get; private set; }
+        public static int minValue { get; private set; }
+        
+        
         public static void ConvertToBinary(int value, out bool[] binaryValue)
         {
+            if (value < minValue || value > maxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(value), value, $"{nameof(value)} must be between {minValue} and {maxValue}");
+            }
             int currentValue = value;
             if (currentValue < 0)
                 currentValue *= -1;
