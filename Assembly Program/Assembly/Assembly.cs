@@ -9,10 +9,8 @@ namespace Assembly
         {
             run,
             quit,
-            add,
-            remove,
-            program,
-            assistance,
+            create,
+            help,
         }
 
         public static Register activeRegister;
@@ -39,7 +37,7 @@ namespace Assembly
         {
             Console.WriteLine("Welcome to the assembly system by Lucas Ackman");
             Console.WriteLine("Write whatever program you want.");
-            Console.WriteLine($"Type \"{nameof(Commands.assistance)}\" if you need help!");
+            Console.WriteLine($"Type \"{nameof(Commands.help)}\" if you need help!");
         }
 
         private static void ListenForInput(ref bool running)
@@ -61,17 +59,11 @@ namespace Assembly
                 case nameof(Commands.quit):
                     running = false;
                     break;
-                case nameof(Commands.add):
-                    AddOperation();
+                case nameof(Commands.create):
+                    CreateProgram();
                     break;
-                case nameof(Commands.remove):
-                    RemoveOperation();
-                    break;
-                case nameof(Commands.program):
-                    ShowOperations();
-                    break;
-                case nameof(Commands.assistance):
-                    ShowAssistance();
+                case nameof(Commands.help):
+                    ShowCommands();
                     break;
                 default:
                     UnrecognizedCommand();
@@ -81,13 +73,12 @@ namespace Assembly
 
         private static void RunProgram()
         {
-            bool continueRunning = true;
             operationIndex = 0;
-            while (continueRunning)
+            while (true)
             {
-                var values = activeProgram[operationIndex];
+                var valueSet = activeProgram[operationIndex];
                 operationIndex++;
-                values.Operation.TriggerOperation(values.StorageIndex, values.ActiveIndices, values.SetValue, out continueRunning);
+                valueSet.Operation.TriggerOperation(valueSet.StorageIndex, valueSet.ActiveIndices, valueSet.SetValue, out bool continueRunning);
                 if (continueRunning)
                     continue;
                 Register.ConvertToInteger(storageRegister.Data[0], out int value);
@@ -96,81 +87,91 @@ namespace Assembly
             }
         }
 
-        private static void AddOperation()
+        private static void CreateProgram()
         {
-            var operation = new Operation();
-            operation.SetUpOperation();
-            int storageIndex = 0;
-            int[] activeIndices = new int[2];
-            int setValue = 0;
-            switch (operation.Function)
+            Console.WriteLine("The Operation Types Are:");
+            Console.WriteLine($"{nameof(Operation.OperationType.set)} (Set a value)");
+            Console.WriteLine($"{nameof(Operation.OperationType.add)} (Add two values)");
+            Console.WriteLine($"{nameof(Operation.OperationType.sub)} (Subtract two values)");
+            Console.WriteLine($"{nameof(Operation.OperationType.inc)} (Increase a value by 1)");
+            Console.WriteLine($"{nameof(Operation.OperationType.dec)} (Decrease a value by 1)");
+            Console.WriteLine($"{nameof(Operation.OperationType.jmp)} (Jump to the Operation at Index A)");
+            Console.WriteLine($"{nameof(Operation.OperationType.jiz)} (Jump to the Operation at Index A if B is 0)");
+            Console.WriteLine($"{nameof(Operation.OperationType.load)} (Load A from Index B of Storage Register");
+            Console.WriteLine($"{nameof(Operation.OperationType.str)} (Store A at Index B of Storage Register)");
+            Console.WriteLine($"{nameof(Operation.OperationType.halt)} (Ends the Program");
+            Console.WriteLine($"{nameof(Operation.OperationType.stop)} (Stop adding new operations to the program)");
+
+            activeProgram = new List<ValueSet>();
+            while (true)
             {
-                case Operation.OperationType.add:
-                case Operation.OperationType.sub:
-                    Console.Write("Input Storage Index: ");
-                    int.TryParse(Console.ReadLine(), out storageIndex);
-                    Console.Write("Input Source Index A: ");
-                    int.TryParse(Console.ReadLine(), out activeIndices[0]);
-                    Console.Write("Input Source Index B: ");
-                    int.TryParse(Console.ReadLine(), out activeIndices[1]);
+
+                var operation = new Operation();
+                operation.SetUpOperation(out bool newOperation);
+                int storageIndex = 0;
+                int[] activeIndices = new int[2];
+                int setValue = 0;
+
+                switch (operation.Function)
+                {
+                    case Operation.OperationType.add:
+                    case Operation.OperationType.sub:
+                        Console.Write("Source Index A: ");
+                        int.TryParse(Console.ReadLine(), out activeIndices[0]);
+                        Console.Write("Source Index B: ");
+                        int.TryParse(Console.ReadLine(), out activeIndices[1]);
+                        Console.Write("Storage Index: ");
+                        int.TryParse(Console.ReadLine(), out storageIndex);
+                        break;
+                    case Operation.OperationType.inc:
+                    case Operation.OperationType.dec:
+                        Console.Write("Source Index: ");
+                        int.TryParse(Console.ReadLine(), out activeIndices[0]);
+                        break;
+                    case Operation.OperationType.str:
+                    case Operation.OperationType.load:
+                        Console.Write("Source Index: ");
+                        int.TryParse(Console.ReadLine(), out activeIndices[0]);
+                        Console.Write("Storage Index: ");
+                        int.TryParse(Console.ReadLine(), out storageIndex);
+                        break;
+                    case Operation.OperationType.set:
+                    case Operation.OperationType.jiz:
+                        Console.Write("Key Value: ");
+                        int.TryParse(Console.ReadLine(), out setValue);
+                        Console.Write("Storage Index: ");
+                        int.TryParse(Console.ReadLine(), out storageIndex);
+                        break;
+                    case Operation.OperationType.jmp:
+                        Console.Write("Key Value: ");
+                        int.TryParse(Console.ReadLine(), out setValue);
+                        break;
+                    case Operation.OperationType.none:
+                    case Operation.OperationType.halt:
+                    case Operation.OperationType.stop:
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+                var values = new ValueSet(operation, storageIndex, activeIndices, setValue);
+                activeProgram.Add(values);
+                if (!newOperation)
                     break;
-                case Operation.OperationType.inc:
-                case Operation.OperationType.dec:
-                case Operation.OperationType.str:
-                case Operation.OperationType.load:
-                    Console.Write("Input Storage Index: ");
-                    int.TryParse(Console.ReadLine(), out storageIndex);
-                    Console.Write("Input Source Index: ");
-                    int.TryParse(Console.ReadLine(), out activeIndices[0]);
-                    break;
-                case Operation.OperationType.set:
-                case Operation.OperationType.jiz:
-                    Console.Write("Input Storage Index: ");
-                    int.TryParse(Console.ReadLine(), out storageIndex);
-                    Console.Write("Input Key Value: ");
-                    int.TryParse(Console.ReadLine(), out setValue);
-                    break;
-                case Operation.OperationType.jmp:
-                    Console.Write("Input Key Value: ");
-                    int.TryParse(Console.ReadLine(), out setValue);
-                    break;
-                case Operation.OperationType.None:
-                case Operation.OperationType.halt:
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
             }
-            var values = new ValueSet(operation, storageIndex, activeIndices, setValue);
-            activeProgram.Add(values);
         }
 
-        private static void RemoveOperation()
-        {
-            ShowOperations();
-        }
-
-        private static void ShowOperations()
-        {
-            foreach (var values in activeProgram)
-            {
-                Console.WriteLine(values.Operation.Function.ToString());
-            }
-        }
-
-        private static void ShowAssistance()
+        private static void ShowCommands()
         {
             Console.WriteLine("The Available Commands Are:");
+            Console.WriteLine($"{nameof(Commands.create)} (Create a new Program)");
             Console.WriteLine($"{nameof(Commands.run)} (Run the Current Program)");
             Console.WriteLine($"{nameof(Commands.quit)} (Quit the System)");
-            Console.WriteLine($"{nameof(Commands.add)} (Add a new Operation to the Program)");
-            Console.WriteLine($"{nameof(Commands.remove)} (Remove an Operation from the Program)");
-            Console.WriteLine($"{nameof(Commands.program)} (Show All Operations in the Current Program)");
         }
 
         private static void UnrecognizedCommand()
         {
-            Console.Write("Command Not Recognized, ");
-            ShowAssistance();
+            Console.WriteLine("Command Not Recognized");
+            ShowCommands();
         }
     }
 }

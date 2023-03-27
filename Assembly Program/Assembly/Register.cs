@@ -7,64 +7,45 @@ namespace Assembly
     {
         public Register(int size)
         {
-            maxValue = (int)Math.Pow(2, BITS) - 1;
-            
             Data = new bool[size][];
             for (int i = 0; i < size; i++)
                 Data[i] = new bool[BITS];
         }
         
-        public bool[][] Data { get; private set; }
+        public bool[][] Data { get; }
 
-        private readonly int maxValue;
-        
-        private const int BITS = 8;
-
-        public void SetData(int index, int value)
-        {
-            if (value > maxValue)
-                throw new ArgumentOutOfRangeException(nameof(value));
-            if (index > Data.Length)
-                throw new ArgumentOutOfRangeException(nameof(index));
-            
-            ConvertToBinary(value, out bool[] binaryValue);
-            Data[index] = binaryValue;
-        }
+        public const int BITS = 8;
 
         public static void ConvertToBinary(int value, out bool[] binaryValue)
         {
+            int currentValue = value;
+            if (currentValue < 0)
+                currentValue *= -1;
             binaryValue = new bool[BITS];
-            string binaryString = Convert.ToString(value, 2);
-            
-            string binary = "";
-            int count = binaryString.Length;
-            while (count < BITS)
+            for (int i = 0; i < BITS - 1; i++)
             {
-                binary += '0';
-                count++;
+                binaryValue[i] = currentValue % 2 == 1;
+                currentValue /= 2;
             }
-            binary += binaryString;
-
-            for (int i = 0; i < BITS; i++)
-            {;
-                if (binary[i] == '1')
-                    binaryValue[i] = true;
-            }
+            if (value < 0)
+                binaryValue = LogicGates.Invert(binaryValue);
         }
 
         public static void ConvertToInteger(bool[] binaryValue, out int value)
         {
-            string binaryString = "";
-            for(int i = 0; i < BITS; i++)
+            value = 0;
+            int multiplier = 1;
+            bool isNegative = binaryValue[BITS - 1];
+            if (binaryValue[BITS - 1])
+                binaryValue = LogicGates.Invert(binaryValue);
+            for (int i = 0; i < BITS - 1; i++)
             {
                 if (binaryValue[i])
-                {
-                    binaryString += 1.ToString();
-                    continue;
-                }
-                binaryString += 0.ToString();
+                    value += multiplier;
+                multiplier *= 2;
             }
-            value = Convert.ToInt32(binaryString, 2);
+            if (isNegative)
+                value *= -1;
         }
     }
 }

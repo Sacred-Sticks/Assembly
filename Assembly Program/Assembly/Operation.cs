@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Assembly
 {
@@ -7,7 +8,7 @@ namespace Assembly
     {
         public enum OperationType
         {
-            None,
+            none,
             add, // A = Add(B, C) A = B + C
             sub, // A = Subtract(B, C) A = B - C
             set, // A = LoadImmediate(value) A = value
@@ -18,25 +19,14 @@ namespace Assembly
             str, // Store(A, B) Store Data from Index A in Active Register at Index B of Storage Register
             load, // Load(A, B) Load Data from Index A of Storage Register into Index B of Active Register
             halt, // Ends the program
+            stop, // Stop adding new operations
         }
 
         public OperationType Function { get; private set; }
 
-        public void SetUpOperation()
+        public void SetUpOperation(out bool newOperation)
         {
-            Console.WriteLine("The Operation Types Are:");
-            Console.WriteLine($"{nameof(OperationType.add)} (Add A + B)");
-            Console.WriteLine($"{nameof(OperationType.sub)} (Subtract B - A)");
-            Console.WriteLine($"{nameof(OperationType.set)} (Set A to value)");
-            Console.WriteLine($"{nameof(OperationType.inc)} (Increase A by 1)");
-            Console.WriteLine($"{nameof(OperationType.dec)} (Decrease A by 1)");
-            Console.WriteLine($"{nameof(OperationType.jmp)} (Jump to the Operation at Index A)");
-            Console.WriteLine($"{nameof(OperationType.jiz)} (Jump to the Operation at Index A if B is 0)");
-            Console.WriteLine($"{nameof(OperationType.str)} (Store A at Index B of Storage Register)");
-            Console.WriteLine($"{nameof(OperationType.load)} (Load A from Index B of Storage Register");
-            Console.WriteLine($"{nameof(OperationType.halt)} (Ends the Program");
-            
-            AssignFunction();
+            newOperation = AssignFunction();
         }
 
         public void TriggerOperation(int storageIndex, int[] activeIndices, int setValue, out bool continueRunning)
@@ -45,16 +35,16 @@ namespace Assembly
             switch (Function)
             {
                 case OperationType.add:
-                    Add(Assembly.activeRegister, storageIndex, activeIndices[0], activeIndices[1]);
+                    Add(storageIndex, activeIndices[0], activeIndices[1]);
                     break;
                 case OperationType.sub:
-                    Subtract(Assembly.activeRegister, storageIndex, activeIndices[0], activeIndices[1]);
+                    Subtract(storageIndex, activeIndices[0], activeIndices[1]);
                     break;
                 case OperationType.inc:
-                    Increase(Assembly.activeRegister, storageIndex, activeIndices[0]);
+                    Increase(activeIndices[0]);
                     break;
                 case OperationType.dec:
-                    Decrease(Assembly.activeRegister, storageIndex, activeIndices[0]);
+                    Decrease(activeIndices[0]);
                     break;
                 case OperationType.str:
                     Store(storageIndex, activeIndices[0]);
@@ -63,25 +53,25 @@ namespace Assembly
                     Load(storageIndex, activeIndices[0]);
                     break;
                 case OperationType.set:
-                    Set(Assembly.activeRegister, storageIndex, setValue);
+                    Set(storageIndex, setValue);
                     break;
                 case OperationType.jiz:
-                    JumpIfZero(Assembly.activeRegister, storageIndex, setValue);
+                    JumpIfZero(storageIndex, setValue);
                     break;
                 case OperationType.jmp:
                     Jump(setValue);
                     break;
+                case OperationType.none:
                 case OperationType.halt:
+                case OperationType.stop:
                     continueRunning = false;
                     return;
-                case OperationType.None:
-                    break;
                 default:
                     throw new ArgumentOutOfRangeException();
             }
         }
-        
-        private void AssignFunction()
+
+        private bool AssignFunction()
         {
             Console.WriteLine();
             Console.WriteLine("Enter The Operation Being Added:");
@@ -90,9 +80,9 @@ namespace Assembly
             if (string.IsNullOrEmpty(userInput))
             {
                 Console.WriteLine("ERROR: Missing Operation Input");
-                return;
+                return false;
             }
-            
+
             switch (userInput)
             {
                 case nameof(OperationType.add):
@@ -125,56 +115,55 @@ namespace Assembly
                 case nameof(OperationType.halt):
                     Function = OperationType.halt;
                     break;
+                case nameof(OperationType.stop):
+                    Function = OperationType.halt;
+                    return false;
                 default:
                     Console.WriteLine("Operation Not Found");
                     break;
             }
+            return true;
         }
 
-        private static void ReadSource(Register target, int readingIndex, out int output)
+        private static void Add(int writingIndex, int readingIndexA, int readingIndexB)
         {
-            Register.ConvertToInteger(target.Data[readingIndex], out int value);
-            output = value;
+            bool[] original = Assembly.activeRegister.Data[readingIndexA];
+            bool[] addition = Assembly.activeRegister.Data[readingIndexB];
+            bool[] binaryValue = LogicGates.Adder(original, addition);
+            Assembly.activeRegister.Data[writingIndex] = binaryValue;
         }
 
-        private static void Add(Register target, int writingIndex, int readingIndexA, int readingIndexB)
+        private static void Subtract(int writingIndex, int readingIndexA, int readingIndexB)
         {
-            ReadSource(target, readingIndexA, out int valueA);
-            ReadSource(target, readingIndexB, out int valueB);
-            int value = valueA + valueB;
-            Register.ConvertToBinary(value, out bool[] binaryValue);
-            target.Data[writingIndex] = binaryValue;
-        }
-        
-        private static void Subtract(Register target, int writingIndex, int readingIndexA, int readingIndexB)
-        {
-            ReadSource(target, readingIndexA, out int valueA);
-            ReadSource(target, readingIndexB, out int valueB);
-            int value = valueA + valueB;
-            Register.ConvertToBinary(value, out bool[] binaryValue);
-            target.Data[writingIndex] = binaryValue;
+            bool[] original = Assembly.activeRegister.Data[readingIndexA];
+            bool[] subtracted = LogicGates.Invert(Assembly.activeRegister.Data[readingIndexB]);
+            bool[] binaryValue = LogicGates.Adder(original, subtracted);
+            Assembly.activeRegister.Data[writingIndex] = binaryValue;
         }
 
-        private static void Set(Register target, int writingIndex, int value)
+        private static void Set(int writingIndex, int value)
         {
             Register.ConvertToBinary(value, out bool[] binaryValue);
-            target.Data[writingIndex] = binaryValue;
+            Assembly.activeRegister.Data[writingIndex] = binaryValue;
         }
 
-        private static void Increase(Register target, int writingIndex, int readingIndex)
+        private static void Increase(int writingIndex)
         {
-            ReadSource(target, readingIndex, out int value);
-            value++;
-            Register.ConvertToBinary(value, out bool[] binaryValue);
-            target.Data[writingIndex] = binaryValue;
+            bool[] one = new bool[Register.BITS];
+            one[0] = true;
+            bool[] binaryValue = Assembly.activeRegister.Data[writingIndex];
+            binaryValue = LogicGates.Adder(binaryValue, one);
+            Assembly.activeRegister.Data[writingIndex] = binaryValue;
         }
 
-        private static void Decrease(Register target, int writingIndex, int readingIndex)
+        private static void Decrease(int writingIndex)
         {
-            ReadSource(target, readingIndex, out int value);
-            value--;
-            Register.ConvertToBinary(value, out bool[] binaryValue);
-            target.Data[writingIndex] = binaryValue;
+            bool[] one = new bool[Register.BITS];
+            one[0] = true;
+            one = LogicGates.Invert(one);
+            bool[] binaryValue = Assembly.activeRegister.Data[writingIndex];
+            binaryValue = LogicGates.Adder(binaryValue, one);
+            Assembly.activeRegister.Data[writingIndex] = binaryValue;
         }
 
         private static void Jump(int jumpIndex)
@@ -182,11 +171,11 @@ namespace Assembly
             Assembly.operationIndex = jumpIndex;
         }
 
-        private static void JumpIfZero(Register target, int readingIndex, int jumpIndex)
+        private static void JumpIfZero(int readingIndex, int jumpIndex)
         {
-            ReadSource(target, readingIndex, out int output);
-            if (output == 0)
-                Jump(jumpIndex);
+            if (Assembly.activeRegister.Data[readingIndex].Any(boolean => boolean))
+                return;
+            Jump(jumpIndex);
         }
 
         private static void Store(int writingIndex, int readingIndex)
