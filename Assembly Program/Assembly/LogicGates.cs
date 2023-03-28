@@ -1,7 +1,4 @@
-﻿using System;
-using System.Xml.XPath;
-
-namespace Assembly
+﻿namespace Assembly
 {
     public static class LogicGates
     {
