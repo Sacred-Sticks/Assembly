@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Assembly.Operations;
 
 namespace Assembly
 {
@@ -12,28 +13,50 @@ namespace Assembly
             create,
             help,
         }
+        public enum OperationTypes
+        {
+            none,
+            add, // A = Add(B, C) A = B + C
+            sub, // A = Subtract(B, C) A = B - C
+            set, // A = LoadImmediate(value) A = value
+            inc, // A = Increase(B) A = B + 1
+            dec, // A = Decrease(B) A = B - 1
+            inv, // A = Invert(A) A = -A
+            jump, // Jump(A) Load operation at Index A
+            jiz, // JumpIfZero(A, B) Load operation at Index A if B is 0
+            save, // Store(A, B) Store Data from Index A in Active Register at Index B of Storage Register
+            load, // Load(A, B) Load Data from Index A of Storage Register into Index B of Active Register
+            halt, // Ends the program
+            stop, // Stop adding new operations
+        }
 
         public static Register activeRegister;
         public static Register storageRegister;
-        public static List<ValueSet> activeProgram;
-        public static int operationIndex;
+        public static List<Operation> fullProgram;
+        public static int programIndex;
+        public static bool programRunning;
 
         public const int activeRegisterSize = 8;
         public const int storageRegisterSize = 64;
-        
+
         public static void Main()
         {
             bool running = true;
             activeRegister = new Register(activeRegisterSize);
             storageRegister = new Register(storageRegisterSize);
-            activeProgram = new List<ValueSet>();
-            
+            fullProgram = new List<Operation>();
+
             IntroduceProgram();
             while (running)
             {
                 Console.WriteLine();
                 ListenForInput(ref running);
             }
+        }
+
+        public static void EndProgram()
+        {
+            programRunning = false;
         }
 
         private static void IntroduceProgram()
@@ -76,90 +99,209 @@ namespace Assembly
 
         private static void RunProgram()
         {
-            operationIndex = 0;
-            while (true)
+            programIndex = 0;
+            programRunning = true;
+            while (programRunning)
             {
-                var valueSet = activeProgram[operationIndex];
-                operationIndex++;
-                valueSet.Operation.TriggerOperation(valueSet.StorageIndex, valueSet.ActiveIndices, valueSet.SetValue, out bool continueRunning);
-                if (continueRunning)
-                    continue;
-                Register.ConvertToInteger(storageRegister.Data[0], out int value);
-                Console.WriteLine($"Final Value at {value}");
-                return;
+                var operation = fullProgram[programIndex];
+                programIndex++;
+                operation.Operate();
             }
+            Register.ConvertToInteger(storageRegister.Data[0], out int value);
+            Console.WriteLine($"Final Value at {value}");
         }
 
         private static void CreateProgram()
         {
             Console.WriteLine("The Operation Types Are:");
-            Console.WriteLine($"{nameof(Operation.OperationType.set)} (Set a value)");
-            Console.WriteLine($"{nameof(Operation.OperationType.add)} (Add two values)");
-            Console.WriteLine($"{nameof(Operation.OperationType.sub)} (Subtract two values)");
-            Console.WriteLine($"{nameof(Operation.OperationType.inc)} (Increase a value by 1)");
-            Console.WriteLine($"{nameof(Operation.OperationType.dec)} (Decrease a value by 1)");
-            Console.WriteLine($"{nameof(Operation.OperationType.jump)} (Jump to the Operation at Index A)");
-            Console.WriteLine($"{nameof(Operation.OperationType.jiz)} (Jump to the Operation at Index A if B is 0)");
-            Console.WriteLine($"{nameof(Operation.OperationType.load)} (Load A from Index B of Storage Register");
-            Console.WriteLine($"{nameof(Operation.OperationType.save)} (Store A at Index B of Storage Register)");
-            Console.WriteLine($"{nameof(Operation.OperationType.halt)} (Ends the Program");
-            Console.WriteLine($"{nameof(Operation.OperationType.stop)} (Stop adding new operations to the program)");
+            Console.WriteLine($"{nameof(OperationTypes.set)} (Set a value)");
+            Console.WriteLine($"{nameof(OperationTypes.add)} (Add two values)");
+            Console.WriteLine($"{nameof(OperationTypes.sub)} (Subtract two values)");
+            Console.WriteLine($"{nameof(OperationTypes.inc)} (Increase a value by 1)");
+            Console.WriteLine($"{nameof(OperationTypes.dec)} (Decrease a value by 1)");
+            Console.WriteLine($"{nameof(OperationTypes.jump)} (Jump to the Operation at Index A)");
+            Console.WriteLine($"{nameof(OperationTypes.jiz)} (Jump to the Operation at Index A if B is 0)");
+            Console.WriteLine($"{nameof(OperationTypes.load)} (Load A from Index B of Storage Register");
+            Console.WriteLine($"{nameof(OperationTypes.save)} (Store A at Index B of Storage Register)");
+            Console.WriteLine($"{nameof(OperationTypes.halt)} (Ends the Program");
+            Console.WriteLine($"{nameof(OperationTypes.stop)} (Stop adding new operations to the program)");
 
-            activeProgram = new List<ValueSet>();
-            while (true)
+            fullProgram = new List<Operation>();
+            AddOperations();
+        }
+
+        private static void AddOperations()
+        {
+            bool addingOperations = true;
+            while (addingOperations)
             {
+                AssignOperation(out var operationType);
 
-                var operation = new Operation();
-                operation.AssignFunction(out bool newOperation);
-                int storageIndex = 0;
-                int[] activeIndices = new int[3];
-                int setValue = 0;
-
-                switch (operation.Function)
+                switch (operationType)
                 {
-                    case Operation.OperationType.add:
-                    case Operation.OperationType.sub:
-                        Console.Write("Source Index A: ");
-                        int.TryParse(Console.ReadLine(), out activeIndices[1]);
-                        Console.Write("Source Index B: ");
-                        int.TryParse(Console.ReadLine(), out activeIndices[2]);
+                    case OperationTypes.add:
+                    {
+                        Console.Write("Reading Index A: ");
+                        int.TryParse(Console.ReadLine(), out int readingIndexA);
+                        Console.Write("Reading Index B: ");
+                        int.TryParse(Console.ReadLine(), out int readingIndexB);
+                        Console.Write("Writing Index: ");
+                        int.TryParse(Console.ReadLine(), out int writingIndex);
+                        fullProgram.Add(new AddOperation(readingIndexA, readingIndexB, writingIndex));
+                        break;
+                    }
+                    case OperationTypes.sub:
+                    {
+                        Console.Write("Reading Index A: ");
+                        int.TryParse(Console.ReadLine(), out int readingIndexA);
+                        Console.Write("Reading Index B: ");
+                        int.TryParse(Console.ReadLine(), out int readingIndexB);
+                        Console.Write("Writing Index: ");
+                        int.TryParse(Console.ReadLine(), out int writingIndex);
+                        fullProgram.Add(new SubtractOperation(readingIndexA, readingIndexB, writingIndex));
+                        break;
+                    }
+                    case OperationTypes.inc:
+                    {
+                        Console.Write("Increase Index: ");
+                        int.TryParse(Console.ReadLine(), out int increasedIndex);
+                        fullProgram.Add(new IncreaseOperation(increasedIndex));
+                        break;
+                    }
+                    case OperationTypes.dec:
+                    {
+                        Console.Write("Decrease Index: ");
+                        int.TryParse(Console.ReadLine(), out int decreasedIndex);
+                        fullProgram.Add(new DecreaseOperation(decreasedIndex));
+                        break;
+                    }
+                    case OperationTypes.inv:
+                    {
+                        Console.Write("Invert Index: ");
+                        int.TryParse(Console.ReadLine(), out int invertedIndex);
+                        fullProgram.Add(new InvertOperation(invertedIndex));
+                        break;
+                    }
+                    case OperationTypes.save:
+                    {
+                        Console.Write("Save From Index: ");
+                        int.TryParse(Console.ReadLine(), out int saveFromIndex);
+                        Console.Write("Save To Index: ");
+                        int.TryParse(Console.ReadLine(), out int saveToIndex);
+                        fullProgram.Add(new SaveOperation(saveFromIndex, saveToIndex));
+                        break;
+                    }
+                    case OperationTypes.load:
+                    {
+                        Console.Write("Load From Index: ");
+                        int.TryParse(Console.ReadLine(), out int loadFromIndex);
+                        Console.Write("Load To Index: ");
+                        int.TryParse(Console.ReadLine(), out int loadToIndex);
+                        fullProgram.Add(new LoadOperation(loadFromIndex, loadToIndex));
+                        break;
+                    }
+                    case OperationTypes.set:
+                    {
+                        Console.Write("Value: ");
+                        int.TryParse(Console.ReadLine(), out int value);
+                        Console.Write("Set To Index: ");
+                        int.TryParse(Console.ReadLine(), out int setToIndex);
+                        fullProgram.Add(new SetOperation(value, setToIndex));
+                        break;
+                    }
+                    case OperationTypes.jiz:
+                    {
+                        Console.Write("Jump to Index: ");
+                        int.TryParse(Console.ReadLine(), out int jumpToIndex);
                         Console.Write("Storage Index: ");
-                        int.TryParse(Console.ReadLine(), out activeIndices[0]);
+                        int.TryParse(Console.ReadLine(), out int zeroCheckIndex);
+                        fullProgram.Add(new JumpIfZeroOperation(jumpToIndex, zeroCheckIndex));
                         break;
-                    case Operation.OperationType.inc:
-                    case Operation.OperationType.dec:
-                    case Operation.OperationType.inv:
-                        Console.Write("Source Index: ");
-                        int.TryParse(Console.ReadLine(), out activeIndices[0]);
+                    }
+                    case OperationTypes.jump:
+                    {
+                        Console.Write("Jump to Index: ");
+                        int.TryParse(Console.ReadLine(), out int jumpToIndex);
+                        fullProgram.Add(new JumpOperation(jumpToIndex));
                         break;
-                    case Operation.OperationType.save:
-                    case Operation.OperationType.load:
-                        Console.Write("Source Index: ");
-                        int.TryParse(Console.ReadLine(), out activeIndices[0]);
-                        Console.Write("Storage Index: ");
-                        int.TryParse(Console.ReadLine(), out storageIndex);
+                    }
+                    case OperationTypes.halt:
+                    {
+                        fullProgram.Add(new HaltOperation());
                         break;
-                    case Operation.OperationType.set:
-                    case Operation.OperationType.jiz:
-                        Console.Write("Key Value: ");
-                        int.TryParse(Console.ReadLine(), out setValue);
-                        Console.Write("Storage Index: ");
-                        int.TryParse(Console.ReadLine(), out activeIndices[0]);
+                    }
+                    case OperationTypes.stop:
+                    {
+                        addingOperations = false;
                         break;
-                    case Operation.OperationType.jump:
-                        Console.Write("Key Value: ");
-                        int.TryParse(Console.ReadLine(), out setValue);
+                    }
+                    case OperationTypes.none:
+                    {
                         break;
-                    case Operation.OperationType.none:
-                    case Operation.OperationType.halt:
-                    case Operation.OperationType.stop:
-                        break;
+                    }
                     default:
-                        throw new ArgumentOutOfRangeException();
+                        throw new ArgumentOutOfRangeException(
+                            nameof(operationType),
+                            operationType,
+                            $"{nameof(operationType)} must be between {OperationTypes.none} and {OperationTypes.stop}"
+                        );
                 }
-                var values = new ValueSet(operation, storageIndex, activeIndices, setValue);
-                activeProgram.Add(values);
-                if (!newOperation)
+            }
+        }
+
+        public static void AssignOperation(out OperationTypes operationTypes)
+        {
+            Console.WriteLine();
+            Console.WriteLine("Enter The Operation Being Added:");
+            string userInput = Console.ReadLine()?.ToLower();
+
+            if (string.IsNullOrEmpty(userInput))
+            {
+                Console.WriteLine("ERROR: Missing Operation Input");
+            }
+
+            operationTypes = OperationTypes.none;
+
+            switch (userInput)
+            {
+                case nameof(OperationTypes.add):
+                    operationTypes = OperationTypes.add;
+                    break;
+                case nameof(OperationTypes.sub):
+                    operationTypes = OperationTypes.sub;
+                    break;
+                case nameof(OperationTypes.set):
+                    operationTypes = OperationTypes.set;
+                    break;
+                case nameof(OperationTypes.inc):
+                    operationTypes = OperationTypes.inc;
+                    break;
+                case nameof(OperationTypes.dec):
+                    operationTypes = OperationTypes.dec;
+                    break;
+                case nameof(OperationTypes.inv):
+                    operationTypes = OperationTypes.inv;
+                    break;
+                case nameof(OperationTypes.jump):
+                    operationTypes = OperationTypes.jump;
+                    break;
+                case nameof(OperationTypes.jiz):
+                    operationTypes = OperationTypes.jiz;
+                    break;
+                case nameof(OperationTypes.save):
+                    operationTypes = OperationTypes.save;
+                    break;
+                case nameof(OperationTypes.load):
+                    operationTypes = OperationTypes.load;
+                    break;
+                case nameof(OperationTypes.halt):
+                    operationTypes = OperationTypes.halt;
+                    break;
+                case nameof(OperationTypes.stop):
+                    operationTypes = OperationTypes.stop;
+                    break;
+                default:
+                    Console.WriteLine("Operation Not Found");
                     break;
             }
         }
