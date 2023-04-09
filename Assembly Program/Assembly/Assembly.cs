@@ -6,14 +6,14 @@ namespace Assembly
 {
     public static class Assembly
     {
-        public enum Commands
+        public enum Command
         {
             run,
             quit,
             create,
             help,
         }
-        public enum OperationTypes
+        public enum OperationType
         {
             none,
             add, // A = Add(B, C) A = B + C
@@ -63,7 +63,7 @@ namespace Assembly
         {
             Console.WriteLine("Welcome to the assembly system by Lucas Ackman");
             Console.WriteLine("Write whatever program you want.");
-            Console.WriteLine($"Type \"{nameof(Commands.help)}\" if you need help!");
+            Console.WriteLine($"Type \"{nameof(Command.help)}\" if you need help!");
         }
 
         private static void ListenForInput(ref bool running)
@@ -79,16 +79,16 @@ namespace Assembly
             // User Entered A Command
             switch (userInput)
             {
-                case nameof(Commands.run):
+                case nameof(Command.run):
                     RunProgram();
                     break;
-                case nameof(Commands.quit):
+                case nameof(Command.quit):
                     running = false;
                     break;
-                case nameof(Commands.create):
+                case nameof(Command.create):
                     CreateProgram();
                     break;
-                case nameof(Commands.help):
+                case nameof(Command.help):
                     ShowCommands();
                     break;
                 default:
@@ -114,17 +114,17 @@ namespace Assembly
         private static void CreateProgram()
         {
             Console.WriteLine("The Operation Types Are:");
-            Console.WriteLine($"{nameof(OperationTypes.set)} (Set a value)");
-            Console.WriteLine($"{nameof(OperationTypes.add)} (Add two values)");
-            Console.WriteLine($"{nameof(OperationTypes.sub)} (Subtract two values)");
-            Console.WriteLine($"{nameof(OperationTypes.inc)} (Increase a value by 1)");
-            Console.WriteLine($"{nameof(OperationTypes.dec)} (Decrease a value by 1)");
-            Console.WriteLine($"{nameof(OperationTypes.jump)} (Jump to the Operation at Index A)");
-            Console.WriteLine($"{nameof(OperationTypes.jiz)} (Jump to the Operation at Index A if B is 0)");
-            Console.WriteLine($"{nameof(OperationTypes.load)} (Load A from Index B of Storage Register");
-            Console.WriteLine($"{nameof(OperationTypes.save)} (Store A at Index B of Storage Register)");
-            Console.WriteLine($"{nameof(OperationTypes.halt)} (Ends the Program");
-            Console.WriteLine($"{nameof(OperationTypes.stop)} (Stop adding new operations to the program)");
+            Console.WriteLine($"{nameof(OperationType.set)} (Set a value)");
+            Console.WriteLine($"{nameof(OperationType.add)} (Add two values)");
+            Console.WriteLine($"{nameof(OperationType.sub)} (Subtract two values)");
+            Console.WriteLine($"{nameof(OperationType.inc)} (Increase a value by 1)");
+            Console.WriteLine($"{nameof(OperationType.dec)} (Decrease a value by 1)");
+            Console.WriteLine($"{nameof(OperationType.jump)} (Jump to the Operation at Index A)");
+            Console.WriteLine($"{nameof(OperationType.jiz)} (Jump to the Operation at Index A if B is 0)");
+            Console.WriteLine($"{nameof(OperationType.load)} (Load A from Index B of Storage Register");
+            Console.WriteLine($"{nameof(OperationType.save)} (Store A at Index B of Storage Register)");
+            Console.WriteLine($"{nameof(OperationType.halt)} (Ends the Program");
+            Console.WriteLine($"{nameof(OperationType.stop)} (Stop adding new operations to the program)");
 
             fullProgram = new List<Operation>();
             AddOperations();
@@ -139,7 +139,7 @@ namespace Assembly
 
                 switch (operationType)
                 {
-                    case OperationTypes.add:
+                    case OperationType.add:
                     {
                         Console.Write("Reading Index A: ");
                         int.TryParse(Console.ReadLine(), out int readingIndexA);
@@ -150,7 +150,7 @@ namespace Assembly
                         fullProgram.Add(new AddOperation(readingIndexA, readingIndexB, writingIndex));
                         break;
                     }
-                    case OperationTypes.sub:
+                    case OperationType.sub:
                     {
                         Console.Write("Reading Index A: ");
                         int.TryParse(Console.ReadLine(), out int readingIndexA);
@@ -161,28 +161,28 @@ namespace Assembly
                         fullProgram.Add(new SubtractOperation(readingIndexA, readingIndexB, writingIndex));
                         break;
                     }
-                    case OperationTypes.inc:
+                    case OperationType.inc:
                     {
                         Console.Write("Increase Index: ");
                         int.TryParse(Console.ReadLine(), out int increasedIndex);
                         fullProgram.Add(new IncreaseOperation(increasedIndex));
                         break;
                     }
-                    case OperationTypes.dec:
+                    case OperationType.dec:
                     {
                         Console.Write("Decrease Index: ");
                         int.TryParse(Console.ReadLine(), out int decreasedIndex);
                         fullProgram.Add(new DecreaseOperation(decreasedIndex));
                         break;
                     }
-                    case OperationTypes.inv:
+                    case OperationType.inv:
                     {
                         Console.Write("Invert Index: ");
                         int.TryParse(Console.ReadLine(), out int invertedIndex);
                         fullProgram.Add(new InvertOperation(invertedIndex));
                         break;
                     }
-                    case OperationTypes.save:
+                    case OperationType.save:
                     {
                         Console.Write("Save From Index: ");
                         int.TryParse(Console.ReadLine(), out int saveFromIndex);
@@ -191,7 +191,7 @@ namespace Assembly
                         fullProgram.Add(new SaveOperation(saveFromIndex, saveToIndex));
                         break;
                     }
-                    case OperationTypes.load:
+                    case OperationType.load:
                     {
                         Console.Write("Load From Index: ");
                         int.TryParse(Console.ReadLine(), out int loadFromIndex);
@@ -200,7 +200,7 @@ namespace Assembly
                         fullProgram.Add(new LoadOperation(loadFromIndex, loadToIndex));
                         break;
                     }
-                    case OperationTypes.set:
+                    case OperationType.set:
                     {
                         Console.Write("Value: ");
                         int.TryParse(Console.ReadLine(), out int value);
@@ -209,7 +209,7 @@ namespace Assembly
                         fullProgram.Add(new SetOperation(value, setToIndex));
                         break;
                     }
-                    case OperationTypes.jiz:
+                    case OperationType.jiz:
                     {
                         Console.Write("Jump to Index: ");
                         int.TryParse(Console.ReadLine(), out int jumpToIndex);
@@ -218,24 +218,24 @@ namespace Assembly
                         fullProgram.Add(new JumpIfZeroOperation(jumpToIndex, zeroCheckIndex));
                         break;
                     }
-                    case OperationTypes.jump:
+                    case OperationType.jump:
                     {
                         Console.Write("Jump to Index: ");
                         int.TryParse(Console.ReadLine(), out int jumpToIndex);
                         fullProgram.Add(new JumpOperation(jumpToIndex));
                         break;
                     }
-                    case OperationTypes.halt:
+                    case OperationType.halt:
                     {
                         fullProgram.Add(new HaltOperation());
                         break;
                     }
-                    case OperationTypes.stop:
+                    case OperationType.stop:
                     {
                         addingOperations = false;
                         break;
                     }
-                    case OperationTypes.none:
+                    case OperationType.none:
                     {
                         break;
                     }
@@ -243,13 +243,13 @@ namespace Assembly
                         throw new ArgumentOutOfRangeException(
                             nameof(operationType),
                             operationType,
-                            $"{nameof(operationType)} must be between {OperationTypes.none} and {OperationTypes.stop}"
+                            $"{nameof(operationType)} must be between {OperationType.none} and {OperationType.stop}"
                         );
                 }
             }
         }
 
-        public static void AssignOperation(out OperationTypes operationTypes)
+        public static void AssignOperation(out OperationType operationType)
         {
             Console.WriteLine();
             Console.WriteLine("Enter The Operation Being Added:");
@@ -260,45 +260,45 @@ namespace Assembly
                 Console.WriteLine("ERROR: Missing Operation Input");
             }
 
-            operationTypes = OperationTypes.none;
+            operationType = OperationType.none;
 
             switch (userInput)
             {
-                case nameof(OperationTypes.add):
-                    operationTypes = OperationTypes.add;
+                case nameof(OperationType.add):
+                    operationType = OperationType.add;
                     break;
-                case nameof(OperationTypes.sub):
-                    operationTypes = OperationTypes.sub;
+                case nameof(OperationType.sub):
+                    operationType = OperationType.sub;
                     break;
-                case nameof(OperationTypes.set):
-                    operationTypes = OperationTypes.set;
+                case nameof(OperationType.set):
+                    operationType = OperationType.set;
                     break;
-                case nameof(OperationTypes.inc):
-                    operationTypes = OperationTypes.inc;
+                case nameof(OperationType.inc):
+                    operationType = OperationType.inc;
                     break;
-                case nameof(OperationTypes.dec):
-                    operationTypes = OperationTypes.dec;
+                case nameof(OperationType.dec):
+                    operationType = OperationType.dec;
                     break;
-                case nameof(OperationTypes.inv):
-                    operationTypes = OperationTypes.inv;
+                case nameof(OperationType.inv):
+                    operationType = OperationType.inv;
                     break;
-                case nameof(OperationTypes.jump):
-                    operationTypes = OperationTypes.jump;
+                case nameof(OperationType.jump):
+                    operationType = OperationType.jump;
                     break;
-                case nameof(OperationTypes.jiz):
-                    operationTypes = OperationTypes.jiz;
+                case nameof(OperationType.jiz):
+                    operationType = OperationType.jiz;
                     break;
-                case nameof(OperationTypes.save):
-                    operationTypes = OperationTypes.save;
+                case nameof(OperationType.save):
+                    operationType = OperationType.save;
                     break;
-                case nameof(OperationTypes.load):
-                    operationTypes = OperationTypes.load;
+                case nameof(OperationType.load):
+                    operationType = OperationType.load;
                     break;
-                case nameof(OperationTypes.halt):
-                    operationTypes = OperationTypes.halt;
+                case nameof(OperationType.halt):
+                    operationType = OperationType.halt;
                     break;
-                case nameof(OperationTypes.stop):
-                    operationTypes = OperationTypes.stop;
+                case nameof(OperationType.stop):
+                    operationType = OperationType.stop;
                     break;
                 default:
                     Console.WriteLine("Operation Not Found");
@@ -309,9 +309,9 @@ namespace Assembly
         private static void ShowCommands()
         {
             Console.WriteLine("The Available Commands Are:");
-            Console.WriteLine($"{nameof(Commands.create)} (Create a new Program)");
-            Console.WriteLine($"{nameof(Commands.run)} (Run the Current Program)");
-            Console.WriteLine($"{nameof(Commands.quit)} (Quit the System)");
+            Console.WriteLine($"{nameof(Command.create)} (Create a new Program)");
+            Console.WriteLine($"{nameof(Command.run)} (Run the Current Program)");
+            Console.WriteLine($"{nameof(Command.quit)} (Quit the System)");
         }
 
         private static void UnrecognizedCommand()
