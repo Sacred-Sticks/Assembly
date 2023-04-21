@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using Assembly.Operations;
 
 namespace Assembly
@@ -12,6 +14,8 @@ namespace Assembly
             quit,
             create,
             help,
+            read,
+            write,
         }
         public enum OperationType
         {
@@ -30,15 +34,16 @@ namespace Assembly
             stop, // Stop adding new operations
         }
 
-        public static Register activeRegister;
-        public static Register storageRegister;
-        public static List<Operation> fullProgram;
-        public static int programIndex;
-        public static bool programRunning;
+        public static Register activeRegister { get; private set; }
+        public static Register storageRegister { get; private set; }
+        public static List<Operation> fullProgram { get; private set; }
+        public static int ProgramIndex { get; set; }
+        private static bool programRunning;
 
-        public const int activeRegisterSize = 8;
-        public const int storageRegisterSize = 64;
-
+        private const int activeRegisterSize = 8;
+        private const int storageRegisterSize = 64;
+        private const string fileName = "StorageRegister.csv";
+        
         public static void Main()
         {
             bool running = true;
@@ -46,11 +51,50 @@ namespace Assembly
             storageRegister = new Register(storageRegisterSize);
             fullProgram = new List<Operation>();
 
+            LoadRegister(storageRegister, fileName);
+            
             IntroduceProgram();
             while (running)
             {
                 Console.WriteLine();
                 ListenForInput(ref running);
+            }
+            SaveRegister(storageRegister, fileName);
+        }
+
+        public static void SaveRegister(Register register, string filePath)
+        {
+            using (var writer = new StreamWriter(filePath))
+            {
+                foreach (bool[] binaryNumber in register.Data)
+                {
+                    string binaryString = string.Join(",", binaryNumber.Reverse().Select(b => b ? "true" : "false"));
+                    writer.WriteLine(binaryString);
+                }
+            }
+        }
+
+        private static void LoadRegister(Register register, string filePath)
+        {
+            if (!File.Exists(filePath))
+            {
+                Console.ForegroundColor = ConsoleColor.Yellow;
+                Console.WriteLine($"No Data at {filePath}: Storage Register Will Begin Empty");
+                Console.ResetColor();
+                return;
+            }
+            
+            string[] allLines = File.ReadAllLines(filePath);
+
+            for (int i = 0; i < allLines.Length; i++)
+            {
+                string[] binaryStrings = allLines[i].Split(',');
+                bool[] binaryValues = new bool[Register.BITS];
+                for (int j = 0; j < binaryStrings.Length; j++)
+                {
+                    bool.TryParse(binaryStrings[j], out binaryValues[j]);
+                }
+                register.Data[i] = binaryValues;
             }
         }
 
@@ -99,12 +143,12 @@ namespace Assembly
 
         private static void RunProgram()
         {
-            programIndex = 0;
+            ProgramIndex = 0;
             programRunning = true;
             while (programRunning)
             {
-                var operation = fullProgram[programIndex];
-                programIndex++;
+                var operation = fullProgram[ProgramIndex];
+                ProgramIndex++;
                 operation.Operate();
             }
             Register.ConvertToInteger(storageRegister.Data[0], out int value);
@@ -312,6 +356,8 @@ namespace Assembly
             Console.WriteLine($"{nameof(Command.create)} (Create a new Program)");
             Console.WriteLine($"{nameof(Command.run)} (Run the Current Program)");
             Console.WriteLine($"{nameof(Command.quit)} (Quit the System)");
+            Console.WriteLine($"{nameof(Command.read)} (Read a program from a saved file)");
+            Console.WriteLine($"{nameof(Command.write)} (Write the current program to a file)");
         }
 
         private static void UnrecognizedCommand()

@@ -11,7 +11,7 @@
         
         public override void Operate()
         {
-            Assembly.programIndex = jumpToIndex;
+            Assembly.ProgramIndex = jumpToIndex;
         }
     }
 }

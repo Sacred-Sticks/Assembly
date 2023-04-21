@@ -17,7 +17,7 @@ namespace Assembly.Operations
         {
             if (Assembly.activeRegister.Data[zeroCheckIndex].Any(boolean => boolean))
                 return;
-            Assembly.programIndex = jumpToIndex;
+            Assembly.ProgramIndex = jumpToIndex;
         }
     }
 }
