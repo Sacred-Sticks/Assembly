@@ -1,4 +1,7 @@
-﻿namespace Assembly.Operations
+﻿using System.Collections.Generic;
+using System.Linq;
+
+namespace Assembly.Operations
 {
     public class SubtractOperation : Operation
     {
@@ -17,10 +20,15 @@
         
         public override void Operate()
         {
-            bool[] original = Assembly.activeRegister.Data[readingIndexA];
-            bool[] subtracted = LogicGates.Invert(Assembly.activeRegister.Data[readingIndexB]);
-            bool[] binaryValue = LogicGates.Adder(original, subtracted);
+            bool[] binaryValue = Subtract(Assembly.activeRegister.Data[readingIndexA], Assembly.activeRegister.Data[readingIndexB]);
             register.Data[writingIndex] = binaryValue;
+        }
+
+        public static bool[] Subtract(IEnumerable<bool> a, IEnumerable<bool> b)
+        {
+            bool[] subtracted = LogicGates.Invert(b.ToArray());
+            bool[] binaryValue = LogicGates.Adder(a.ToArray(), subtracted);
+            return binaryValue;
         }
     }
 }
