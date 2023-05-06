@@ -18,10 +18,13 @@ namespace Assembly.Operations
 
         public override void Operate()
         {
-            bool[] numerator = Assembly.activeRegister.Data[numeratorIndex]
+            bool[] numerator = (Assembly.activeRegister.Data[numeratorIndex][Register.BITS - 1] 
+                    ? LogicGates.Invert(Assembly.activeRegister.Data[numeratorIndex].ToArray()) 
+                    : Assembly.activeRegister.Data[numeratorIndex].ToArray())
                 .Reverse()
                 .ToArray();
-            bool[] denominator = Assembly.activeRegister.Data[denominatorIndex]
+            bool[] denominator = (Assembly.activeRegister.Data[denominatorIndex][Register.BITS - 1]
+                ? LogicGates.Invert(Assembly.activeRegister.Data[denominatorIndex].ToArray()) : Assembly.activeRegister.Data[denominatorIndex])
                 .ToArray();
 
             bool[] remainder = new bool[Register.BITS];
@@ -40,9 +43,14 @@ namespace Assembly.Operations
                 result[i] = true;
                 remainder = subtracted;
             }
-            Assembly.activeRegister.Data[writeToIndex] = result
-                .Reverse()
-                .ToArray();
+            result = LogicGates.Xor(Assembly.activeRegister.Data[numeratorIndex][Register.BITS - 1], Assembly.activeRegister.Data[denominatorIndex][Register.BITS - 1])
+                ? LogicGates.Invert(result
+                    .Reverse()
+                    .ToArray())
+                : result
+                    .Reverse()
+                    .ToArray();
+            Assembly.activeRegister.Data[writeToIndex] = result;
         }
     }
 }
